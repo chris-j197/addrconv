@@ -67,6 +67,34 @@ func TestLines(t *testing.T) {
 				"NOWHERE TX 75001",
 			},
 		},
+		{
+			name: "less common suffix and alternate spelling",
+			addr: Address{
+				Street: "8 Fifth Crossing",
+				Unit:   "Basement 2",
+				City:   "Duluth",
+				State:  "MN",
+				Zip5:   "55801",
+			},
+			want: []string{
+				"8 FIFTH XING BSMT 2",
+				"DULUTH MN 55801",
+			},
+		},
+		{
+			name: "trailer unit and turnpike suffix",
+			addr: Address{
+				Street: "17 Old Turnpike",
+				Unit:   "Trailer 9",
+				City:   "Concord",
+				State:  "NH",
+				Zip5:   "03301",
+			},
+			want: []string{
+				"17 OLD TPKE TRLR 9",
+				"CONCORD NH 03301",
+			},
+		},
 	}
 
 	for _, c := range cases {
