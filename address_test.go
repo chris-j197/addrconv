@@ -95,6 +95,45 @@ func TestLines(t *testing.T) {
 				"CONCORD NH 03301",
 			},
 		},
+		{
+			name: "two-word directional",
+			addr: Address{
+				Street: "200 North East Main Street",
+				City:   "Grand Rapids",
+				State:  "MI",
+				Zip5:   "49503",
+			},
+			want: []string{
+				"200 NE MAIN ST",
+				"GRAND RAPIDS MI 49503",
+			},
+		},
+		{
+			name: "post office box spelled out",
+			addr: Address{
+				Street: "Post Office Box 55",
+				City:   "Boise",
+				State:  "ID",
+				Zip5:   "83702",
+			},
+			want: []string{
+				"PO BOX 55",
+				"BOISE ID 83702",
+			},
+		},
+		{
+			name: "po box as separated letters",
+			addr: Address{
+				Street: "P O Box 900",
+				City:   "Helena",
+				State:  "MT",
+				Zip5:   "59601",
+			},
+			want: []string{
+				"PO BOX 900",
+				"HELENA MT 59601",
+			},
+		},
 	}
 
 	for _, c := range cases {

@@ -226,6 +226,62 @@ var unitAbbrev = map[string]string{
 var punctuation = regexp.MustCompile(`[.,]`)
 var spaces = regexp.MustCompile(`\s+`)
 
+// multiWordPhrases holds fixed word sequences that have to be matched
+// as a unit before the per-word tables run. A two-word directional
+// like "NORTH EAST" has no single-word entry in directionalAbbrev, and
+// the various ways people write a PO Box line ("Post Office Box",
+// "P O Box") all need to collapse to the same "PO BOX" USPS wants,
+// which a word-by-word lookup can't do. Longer phrases are listed
+// first so a 3-word match is tried before a shorter one could steal
+// part of it.
+var multiWordPhrases = []struct {
+	words []string
+	repl  string
+}{
+	{[]string{"POST", "OFFICE", "BOX"}, "PO BOX"},
+	{[]string{"P", "O", "BOX"}, "PO BOX"},
+	{[]string{"NORTH", "EAST"}, "NE"},
+	{[]string{"NORTH", "WEST"}, "NW"},
+	{[]string{"SOUTH", "EAST"}, "SE"},
+	{[]string{"SOUTH", "WEST"}, "SW"},
+}
+
+// replacePhrases scans words left to right and substitutes any
+// multiWordPhrases match it finds, passing through anything else
+// unchanged.
+func replacePhrases(words []string) []string {
+	out := make([]string, 0, len(words))
+	for i := 0; i < len(words); {
+		matched := false
+		for _, p := range multiWordPhrases {
+			end := i + len(p.words)
+			if end > len(words) {
+				continue
+			}
+			if equalWords(words[i:end], p.words) {
+				out = append(out, strings.Fields(p.repl)...)
+				i = end
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			out = append(out, words[i])
+			i++
+		}
+	}
+	return out
+}
+
+func equalWords(a, b []string) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // standardizeWords uppercases s, strips punctuation, and replaces any
 // whole word found in the given abbreviation table.
 func standardizeWords(s string, table map[string]string) string {
@@ -241,7 +297,12 @@ func standardizeWords(s string, table map[string]string) string {
 
 // standardizeStreet abbreviates both directionals and suffixes, since
 // a street name can carry both ("NORTH MAIN STREET" -> "N MAIN ST").
+// It also folds multi-word phrases like "NORTH EAST" or "POST OFFICE
+// BOX" down to their standard form before the single-word tables run.
 func standardizeStreet(s string) string {
+	s = punctuation.ReplaceAllString(strings.ToUpper(s), "")
+	words := strings.Fields(spaces.ReplaceAllString(s, " "))
+	s = strings.Join(replacePhrases(words), " ")
 	s = standardizeWords(s, directionalAbbrev)
 	return standardizeWords(s, suffixAbbrev)
 }
