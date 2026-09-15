@@ -34,6 +34,23 @@ $ printf 'JANE DOE\n123 N MAIN ST APT 4B\nSPRINGFIELD IL 62704\n' | go run . dec
 The recipient line is optional - a 2-line block (street, then city/state/
 zip) decodes fine without one.
 
+## Batch conversion
+
+Add `-json` to either command to convert a whole array at once instead of
+a single address. `encode -json` takes a JSON array of Address objects and
+returns a JSON array of line blocks; `decode -json` takes a JSON array of
+line blocks and returns a JSON array of Address objects.
+
+```
+$ echo '[{"street":"44 East Oak Avenue","city":"Reno","state":"NV","zip5":"89501"}]' | go run . encode -json
+[
+  [
+    "44 E OAK AVE",
+    "RENO NV 89501"
+  ]
+]
+```
+
 ## What it does not do
 
 It doesn't validate that an address exists, doesn't look up ZIP+4 codes,
