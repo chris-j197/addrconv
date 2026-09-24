@@ -67,6 +67,9 @@ func runEncode(in *os.File, out *os.File) error {
 	if err := json.NewDecoder(in).Decode(&a); err != nil {
 		return fmt.Errorf("reading JSON address: %w", err)
 	}
+	if err := a.Validate(); err != nil {
+		return err
+	}
 	for _, line := range a.Lines() {
 		fmt.Fprintln(out, line)
 	}
@@ -80,6 +83,9 @@ func runEncodeBatch(in *os.File, out *os.File) error {
 	}
 	blocks := make([][]string, len(addrs))
 	for i, a := range addrs {
+		if err := a.Validate(); err != nil {
+			return fmt.Errorf("address %d: %w", i, err)
+		}
 		blocks[i] = a.Lines()
 	}
 	enc := json.NewEncoder(out)

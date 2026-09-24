@@ -266,6 +266,10 @@ func TestParseLinesErrors(t *testing.T) {
 			lines: []string{"123 N MAIN ST", "SPRINGFIELD ILL 62704"},
 		},
 		{
+			name:  "last line has two letters that aren't a real state code",
+			lines: []string{"123 N MAIN ST", "SPRINGFIELD ZZ 62704"},
+		},
+		{
 			name:  "last line has malformed zip",
 			lines: []string{"123 N MAIN ST", "SPRINGFIELD IL 627"},
 		},
@@ -277,6 +281,40 @@ func TestParseLinesErrors(t *testing.T) {
 				t.Errorf("ParseLines(%v) error = nil, want error", c.lines)
 			}
 		})
+	}
+}
+
+func TestValidStateCode(t *testing.T) {
+	cases := []struct {
+		code string
+		want bool
+	}{
+		{"IL", true},
+		{"il", true},
+		{"DC", true},
+		{"PR", true},
+		{"AE", true},
+		{"ZZ", false},
+		{"ILL", false},
+		{"", false},
+	}
+
+	for _, c := range cases {
+		if got := ValidStateCode(c.code); got != c.want {
+			t.Errorf("ValidStateCode(%q) = %v, want %v", c.code, got, c.want)
+		}
+	}
+}
+
+func TestAddressValidate(t *testing.T) {
+	valid := Address{Street: "1 Main St", City: "Reno", State: "NV", Zip5: "89501"}
+	if err := valid.Validate(); err != nil {
+		t.Errorf("Validate() on valid address = %v, want nil", err)
+	}
+
+	invalid := Address{Street: "1 Main St", City: "Nowhere", State: "ZZ", Zip5: "00000"}
+	if err := invalid.Validate(); err == nil {
+		t.Error("Validate() on address with bad state = nil, want error")
 	}
 }
 

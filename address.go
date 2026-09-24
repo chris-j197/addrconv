@@ -223,6 +223,44 @@ var unitAbbrev = map[string]string{
 	"UPPER":      "UPPR",
 }
 
+// validStateCodes is the full set of two-letter codes USPS accepts in
+// the state position: the 50 states, DC, the inhabited territories,
+// and the military "state" codes used for APO/FPO/DPO addresses.
+var validStateCodes = map[string]bool{
+	"AL": true, "AK": true, "AZ": true, "AR": true, "CA": true,
+	"CO": true, "CT": true, "DE": true, "FL": true, "GA": true,
+	"HI": true, "ID": true, "IL": true, "IN": true, "IA": true,
+	"KS": true, "KY": true, "LA": true, "ME": true, "MD": true,
+	"MA": true, "MI": true, "MN": true, "MS": true, "MO": true,
+	"MT": true, "NE": true, "NV": true, "NH": true, "NJ": true,
+	"NM": true, "NY": true, "NC": true, "ND": true, "OH": true,
+	"OK": true, "OR": true, "PA": true, "RI": true, "SC": true,
+	"SD": true, "TN": true, "TX": true, "UT": true, "VT": true,
+	"VA": true, "WA": true, "WV": true, "WI": true, "WY": true,
+	"DC": true,
+	"AS": true, "GU": true, "MP": true, "PR": true, "VI": true,
+	"AA": true, "AE": true, "AP": true,
+}
+
+// ValidStateCode reports whether code is a two-letter state,
+// territory, or military "state" abbreviation that USPS delivers to.
+// The check is case-insensitive.
+func ValidStateCode(code string) bool {
+	return validStateCodes[strings.ToUpper(code)]
+}
+
+// Validate checks the fields that have to take one specific form for
+// USPS to deliver the piece, rather than just a preferred spelling.
+// Right now that's only the state code; Lines will happily abbreviate
+// whatever it's given, but a state that isn't on USPS's list means the
+// address can't actually be delivered.
+func (a Address) Validate() error {
+	if !ValidStateCode(a.State) {
+		return fmt.Errorf("invalid state code %q", a.State)
+	}
+	return nil
+}
+
 var punctuation = regexp.MustCompile(`[.,]`)
 var spaces = regexp.MustCompile(`\s+`)
 
@@ -387,6 +425,9 @@ func ParseLines(lines []string) (Address, error) {
 		return Address{}, fmt.Errorf("last line %q is not CITY ST ZIP", clean[1])
 	}
 	a.City, a.State, a.Zip5, a.Zip4 = strings.TrimSpace(m[1]), m[2], m[3], m[4]
+	if !ValidStateCode(a.State) {
+		return Address{}, fmt.Errorf("last line %q has unrecognized state code %q", clean[1], a.State)
+	}
 
 	// The street line may carry a unit designator we recognize; if so,
 	// split it off, otherwise treat the whole line as the street.
